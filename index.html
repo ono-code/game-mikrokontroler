@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATmega8535 MicroLab Master - SMK TEI Kelas XI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        circuit: {
+                            bg: '#0b132b',
+                            card: '#1c2541',
+                            accent: '#6fffe9',
+                            darkPin: '#3a506b',
+                            ic: '#1f2937',
+                            gold: '#f59e0b',
+                            neonGreen: '#10b981',
+                            neonRed: '#ef4444'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glow-effect {
+            box-shadow: 0 0 15px rgba(111, 255, 233, 0.3);
+        }
+        .glow-red {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+        .glow-green {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+        .ic-chip {
+            background: linear-gradient(145deg, #1f2937, #111827);
+            border: 2px solid #374151;
+        }
+        .pin-btn {
+            transition: all 0.2s ease;
+        }
+        .pin-btn:hover {
+            transform: scale(1.08);
+            z-index: 10;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b132b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3a506b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6fffe9;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-mono font-bold text-xl glow-effect">
+                    AVR
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-white leading-tight flex items-center gap-2">
+                        MicroLab ATmega8535
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800">SMK TEI Kelas 11</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Pembelajaran Interaktif Mikrokontroler, Sensor & Aktuator</p>
+                </div>
+            </div>
+
+            <!-- Stats & Controls -->
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+                    <div>
+                        <span class="text-slate-400 block">Level / XP:</span>
+                        <span id="playerXP" class="font-mono text-cyan-400 font-bold">0 XP</span>
+                    </div>
+                    <div class="h-6 w-px bg-slate-800"></div>
+                    <div>
+                        <span class="text-slate-400 block">Peringkat:</span>
+                        <span id="playerRank" class="font-bold text-amber-400">Siswa Siswa Novice</span>
+                    </div>
+                </div>
+
+                <button id="soundToggleBtn" onclick="toggleAudio()" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-slate-300 transition" title="Toggle Sound">
+                    🔊 Sound: ON
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto gap-2 pt-2 border-t border-slate-800/50 text-sm">
+            <button onclick="switchTab('pinout')" id="tab-pinout" class="tab-btn active border-b-2 border-cyan-400 text-cyan-400 px-4 py-2 font-medium flex items-center gap-2">
+                📌 1. Pinout ATmega8535
+            </button>
+            <button onclick="switchTab('registers')" id="tab-registers" class="tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-200 px-4 py-2 font-medium flex items-center gap-2">
+                💻 2. Register (DDRx & PORTx)
+            </button>
+            <button onclick="switchTab('lab')" id="tab-lab" class="tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-200 px-4 py-2 font-medium flex items-center gap-2">
+                ⚡ 3. Lab Misi Praktikum
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-200 px-4 py-2 font-medium flex items-center gap-2">
+                📝 4. Ujian Kompetensi
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+
+        <!-- ================= TAB 1: PINOUT ATMEGA8535 ================= -->
+        <section id="view-pinout" class="tab-content space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            Arsitektur Pinout IC ATmega8535 (DIP 40-Pin)
+                        </h2>
+                        <p class="text-sm text-slate-400">Klik pada nomor pin di diagram chip untuk mempelajari fungsi port, ADC, PWM, interrupt, dan catu daya.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="startPinoutGame()" class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-semibold text-slate-950 text-sm rounded-lg shadow-lg transition">
+                            🎯 Tantangan Tebak Pin
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    <!-- IC Diagram Column -->
+                    <div class="lg:col-span-7 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col items-center relative overflow-x-auto">
+                        <div class="text-xs text-slate-500 font-mono mb-2">Dual In-line Package (DIP-40)</div>
+                        
+                        <!-- Real Chip Visual -->
+                        <div class="ic-chip w-72 rounded-lg py-4 px-2 shadow-2xl relative">
+                            <!-- Notch -->
+                            <div class="w-10 h-5 bg-slate-950 rounded-b-full mx-auto border-b border-x border-slate-700 mb-2"></div>
+                            
+                            <!-- Chip Label -->
+                            <div class="text-center font-mono my-4">
+                                <span class="text-slate-500 text-xs block">ATMEL</span>
+                                <span class="text-cyan-400 font-bold tracking-widest text-sm">ATmega8535</span>
+                                <span class="text-slate-600 text-[10px] block">16PU 2420</span>
+                            </div>
+
+                            <!-- Pins Container -->
+                            <div class="space-y-1 my-2">
+                                <!-- 20 Rows for 40 Pins -->
+                                <script>
+                                    // Script block will render pins dynamically below
+                                </script>
+                                <div id="pinGrid" class="space-y-1.5 font-mono text-xs">
+                                    <!-- Pins will be injected here by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pin Info Box & Challenge Panel -->
+                    <div class="lg:col-span-5 space-y-4">
+                        <!-- Info Card -->
+                        <div id="pinDetailCard" class="bg-slate-900 border border-slate-700 rounded-xl p-5 shadow-lg">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                                <span id="pinDetailNumber" class="text-xl font-bold font-mono text-cyan-400">Pin --</span>
+                                <span id="pinDetailGroup" class="px-2.5 py-1 text-xs rounded-full bg-slate-800 text-slate-300 font-medium">Pilih Pin di Kiri</span>
+                            </div>
+                            <h3 id="pinDetailName" class="text-lg font-bold text-white mb-2">Klik pin untuk info detail</h3>
+                            <p id="pinDetailDesc" class="text-sm text-slate-300 leading-relaxed mb-4">
+                                ATmega8535 adalah mikrokontroler 8-bit CMOS berdaya rendah berbasis arsitektur AVR RISC dengan memori Flash 8KB, EEPROM 512B, dan SRAM 512B.
+                            </p>
+                            <div id="pinDetailSpecs" class="bg-slate-950 p-3 rounded-lg border border-slate-800/80 text-xs font-mono space-y-1 text-slate-400">
+                                <div>Fitur Utama: <span class="text-slate-200">40 Pin, 32 I/O Line terprogram</span></div>
+                                <div>Port: <span class="text-slate-200">PORTA (ADC), PORTB, PORTC, PORTD</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Game Challenge Overlay (Hidden by default) -->
+                        <div id="pinGamePanel" class="hidden bg-slate-900 border border-cyan-500/40 rounded-xl p-5 glow-effect">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-bold text-cyan-400 text-sm flex items-center gap-2">
+                                    🎯 Tantangan Tebak Pin
+                                </h3>
+                                <span id="pinGameScore" class="font-mono text-xs text-amber-400 font-bold">Skor: 0</span>
+                            </div>
+                            <p id="pinGameQuestion" class="text-sm text-white font-medium mb-4">
+                                Klik pin yang berfungsi sebagai **ADC Channel 0 (ADC0)**!
+                            </p>
+                            <div class="flex justify-between items-center text-xs text-slate-400">
+                                <span id="pinGameFeedback" class="font-semibold text-slate-300">Pilih pin pada diagram chip...</span>
+                                <button onclick="stopPinoutGame()" class="text-red-400 hover:underline">Batal</button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Reference Legend -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs space-y-2">
+                            <h4 class="font-semibold text-slate-300 mb-2">Petunjuk Kelompok Warna Port:</h4>
+                            <div class="grid grid-cols-2 gap-2 font-mono">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                                    <span>PORTA (ADC Input)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                                    <span>PORTB (SPI/Timer)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+                                    <span>PORTC (I2C/General)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                                    <span>PORTD (USART/INT/PWM)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+                                    <span>Power (VCC/GND/AVCC)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-cyan-500"></span>
+                                    <span>System (Reset/XTAL)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: REGISTER & LOGIK KODE ================= -->
+        <section id="view-registers" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-white">Simulasi Logika Register I/O (DDRx, PORTx, PINx)</h2>
+                    <p class="text-sm text-slate-400">Di mikrokontroler AVR, pengaturan mode input/output dan logika pin dikendalikan melalui 3 register utama.</p>
+                </div>
+
+                <!-- Select Port to Control -->
+                <div class="flex items-center gap-4 mb-6">
+                    <span class="text-sm font-medium text-slate-300">Pilih Port AVR:</span>
+                    <div class="flex gap-2">
+                        <button onclick="selectRegisterPort('A')" id="btnPortA" class="port-select-btn px-4 py-1.5 rounded-lg bg-cyan-600 text-white font-mono font-bold text-sm">PORT A</button>
+                        <button onclick="selectRegisterPort('B')" id="btnPortB" class="port-select-btn px-4 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 font-mono font-bold text-sm">PORT B</button>
+                        <button onclick="selectRegisterPort('C')" id="btnPortC" class="port-select-btn px-4 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 font-mono font-bold text-sm">PORT C</button>
+                        <button onclick="selectRegisterPort('D')" id="btnPortD" class="port-select-btn px-4 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 font-mono font-bold text-sm">PORT D</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Register Manipulator -->
+                    <div class="lg:col-span-7 bg-slate-950 p-6 rounded-xl border border-slate-800 space-y-6">
+                        
+                        <!-- DDR Register -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="font-mono text-sm font-bold text-cyan-400">DDR<span class="currentPortLabel">A</span> (Data Direction Register):</label>
+                                <span id="ddrHexVal" class="font-mono text-xs bg-slate-800 px-2 py-0.5 rounded text-amber-400">0x00 (Semua Input)</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-3">Bit = 1 → Output | Bit = 0 → Input</p>
+                            <div id="ddrBits" class="grid grid-cols-8 gap-1.5 text-center font-mono">
+                                <!-- Generated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- PORT Register -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="font-mono text-sm font-bold text-emerald-400">PORT<span class="currentPortLabel">A</span> (Data Register / Output Buffer):</label>
+                                <span id="portHexVal" class="font-mono text-xs bg-slate-800 px-2 py-0.5 rounded text-amber-400">0x00</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-3">Jika Output: Bit=1 (HIGH +5V), Bit=0 (LOW 0V). Jika Input: Bit=1 (Pull-up Aktif).</p>
+                            <div id="portBits" class="grid grid-cols-8 gap-1.5 text-center font-mono">
+                                <!-- Generated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- PIN Register (Physical Input) -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="font-mono text-sm font-bold text-purple-400">PIN<span class="currentPortLabel">A</span> (Input Pins Address - Read Only):</label>
+                                <span id="pinHexVal" class="font-mono text-xs bg-slate-800 px-2 py-0.5 rounded text-amber-400">0x00</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-3">Membaca kondisi fisik tegangan nyata pada kaki/pin mikrokontroler.</p>
+                            <div id="pinBits" class="grid grid-cols-8 gap-1.5 text-center font-mono">
+                                <!-- Generated by JS -->
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Code Preview & Hardware Simulation -->
+                    <div class="lg:col-span-5 space-y-4">
+                        <!-- Code C CVAVR Output -->
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs space-y-2">
+                            <div class="text-slate-500 font-sans font-bold flex justify-between">
+                                <span>Ekivalen Bahasa C (CodeVisionAVR / GCC-AVR)</span>
+                                <span class="text-cyan-400">Autogenerated</span>
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded text-slate-300 space-y-1 overflow-x-auto">
+                                <div><span class="text-purple-400">#include</span> &lt;mega8535.h&gt;</div>
+                                <div class="text-slate-500">// Konfigurasi Awal PORT <span class="currentPortLabel">A</span></div>
+                                <div><span class="text-cyan-400">DDR</span><span class="currentPortLabel">A</span> = <span id="codeDDRHex" class="text-amber-400">0x00</span>; <span class="text-slate-500">// Bin: <span id="codeDDRBin">00000000</span></span></div>
+                                <div><span class="text-cyan-400">PORT</span><span class="currentPortLabel">A</span> = <span id="codePORTHex" class="text-amber-400">0x00</span>; <span class="text-slate-500">// Bin: <span id="codePORTBin">00000000</span></span></div>
+                                <br>
+                                <div class="text-slate-500">// Contoh Pembacaan Input di Void Main:</div>
+                                <div><span class="text-purple-400">if</span> ((<span class="text-purple-300">PIN</span><span class="currentPortLabel">A</span> &amp; <span class="text-amber-400">0x01</span>) == <span class="text-amber-400">0x01</span>) {</div>
+                                <div class="pl-4 text-emerald-400">// Pin 0 mendeteksi tegangan HIGH (+5V)</div>
+                                <div>}</div>
+                            </div>
+                        </div>
+
+                        <!-- Hardware Pin LED Array Visualizer -->
+                        <div class="bg-slate-900 p-5 rounded-xl border border-slate-800">
+                            <h4 class="font-bold text-sm text-white mb-3 flex items-center justify-between">
+                                Visualisasi Status Fisik Pin & LED Output
+                                <span class="text-xs font-normal text-slate-400">Bit 7 → Bit 0</span>
+                            </h4>
+                            <div id="ledMatrix" class="grid grid-cols-8 gap-2">
+                                <!-- 8 LEDs rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: LAB MISI PRAKTIKUM ================= -->
+        <section id="view-lab" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-white">Laboratorium Simulasi Sistem Terintegrasi</h2>
+                        <p class="text-sm text-slate-400">Pilih modul praktikum untuk menguji interaksi sensor, mikrokontroler ATmega8535, dan aktuator.</p>
+                    </div>
+                    
+                    <!-- Mission Selector Dropdown -->
+                    <select id="missionSelect" onchange="loadMission(this.value)" class="bg-slate-950 border border-slate-700 text-cyan-400 font-semibold text-sm rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500">
+                        <option value="1">Misi 1: Sakelar Otomatis Cahaya (LDR Sensor + Relay Lampu)</option>
+                        <option value="2">Misi 2: Alarm Suhu Pabrik (LM35 Temp + ADC + Buzzer + LCD)</option>
+                        <option value="3">Misi 3: Palang Pintu Otomatis (Ultrasonic + PWM Servo Motor)</option>
+                        <option value="4">Misi 4: Kontrol Tombol & Output Lampu LED Array</option>
+                    </select>
+                </div>
+
+                <!-- Simulation Workbench -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    <!-- Left: Sensor Controller Panel -->
+                    <div class="lg:col-span-4 bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-5">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <h3 class="font-bold text-sm text-cyan-400 flex items-center gap-2">
+                                📡 Modul Sensor (Input)
+                            </h3>
+                            <span id="sensorTypeBadge" class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 font-mono">Analog / ADC</span>
+                        </div>
+
+                        <!-- Dynamic Sensor Control Area -->
+                        <div id="sensorControlContainer" class="space-y-4">
+                            <!-- Injected by JS based on mission -->
+                        </div>
+
+                        <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 text-xs font-mono space-y-1">
+                            <div class="text-slate-400">Pin Koneksi Sensor:</div>
+                            <div id="sensorPinMap" class="text-cyan-300 font-bold">ATmega8535 Pin 40 (PORTA.0 / ADC0)</div>
+                            <div class="text-slate-400 mt-1">Nilai ADC Read (10-bit): <span id="adcValueDisplay" class="text-amber-400 font-bold">0</span> / 1023</div>
+                        </div>
+                    </div>
+
+                    <!-- Center: ATmega8535 MCU Processing Core -->
+                    <div class="lg:col-span-4 bg-slate-950 p-5 rounded-xl border border-slate-800 flex flex-col justify-between relative overflow-hidden">
+                        <div class="absolute -right-10 -top-10 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl"></div>
+                        
+                        <div>
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-4">
+                                <h3 class="font-bold text-sm text-emerald-400">🧠 AVR MCU Core Processing</h3>
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">CLK: 11.0592 MHz</span>
+                            </div>
+
+                            <p id="missionObjectiveText" class="text-xs text-slate-300 leading-relaxed mb-4">
+                                Program mengevaluasi nilai ambang batas sensor secara terus menerus melalui ADC dan menentukan instruksi logika aktuator.
+                            </p>
+
+                            <!-- Simplified Logic Flow Visualizer -->
+                            <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-2 text-xs font-mono">
+                                <div class="text-slate-500">// Status Logika Pemrosesan</div>
+                                <div id="logicStep1" class="text-slate-300">1. Reading Sensor... OK</div>
+                                <div id="logicStep2" class="text-amber-400">2. ADC Conversion: 0 V</div>
+                                <div id="logicStep3" class="text-emerald-400">3. Condition Met: [NO]</div>
+                            </div>
+                        </div>
+
+                        <!-- MCU Status Power LED -->
+                        <div class="pt-4 border-t border-slate-900 flex items-center justify-between text-xs">
+                            <span class="text-slate-400">Status AVR System:</span>
+                            <span class="flex items-center gap-2 font-mono text-emerald-400 font-bold">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                RUNNING (5V VCC)
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Actuator Output Panel -->
+                    <div class="lg:col-span-4 bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-5">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <h3 class="font-bold text-sm text-purple-400 flex items-center gap-2">
+                                ⚙️ Modul Aktuator (Output)
+                            </h3>
+                            <span id="actuatorTypeBadge" class="text-xs px-2 py-0.5 rounded bg-purple-950 text-purple-300 font-mono">Digital / Relay</span>
+                        </div>
+
+                        <!-- Dynamic Actuator Visualizer Area -->
+                        <div id="actuatorControlContainer" class="space-y-4">
+                            <!-- Injected by JS based on mission -->
+                        </div>
+
+                        <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 text-xs font-mono space-y-1">
+                            <div class="text-slate-400">Pin Koneksi Aktuator:</div>
+                            <div id="actuatorPinMap" class="text-purple-300 font-bold">ATmega8535 Pin 22 (PORTC.0)</div>
+                            <div class="text-slate-400 mt-1">Status Output Pin: <span id="actuatorStateDisplay" class="text-rose-400 font-bold">LOW (0V / OFF)</span></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 4: UJIAN KOMPETENSI TEI ================= -->
+        <section id="view-quiz" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-3xl mx-auto">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-white">Ujian Kompetensi Teknik Elektronika Industri</h2>
+                    <p class="text-sm text-slate-400">Uji pengetahuan Anda tentang arsitektur ATmega8535, register, ADC, sensor, dan aktuator.</p>
+                </div>
+
+                <div id="quizBox" class="bg-slate-950 p-6 rounded-xl border border-slate-800 space-y-6">
+                    <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-800 pb-3">
+                        <span id="quizProgress" class="font-mono text-cyan-400 font-bold">Soal 1 dari 5</span>
+                        <span id="quizTimer" class="bg-slate-900 px-3 py-1 rounded border border-slate-800 text-amber-400 font-mono">Poin: +100 XP/soal</span>
+                    </div>
+
+                    <h3 id="quizQuestionText" class="text-base md:text-lg font-semibold text-white leading-relaxed">
+                        Di antara PORT berikut pada ATmega8535, port manakah yang terintegrasi secara khusus dengan modul internal ADC 10-bit?
+                    </h3>
+
+                    <div id="quizOptionsContainer" class="space-y-3">
+                        <!-- Quiz options dynamically injected here -->
+                    </div>
+
+                    <!-- Feedback message -->
+                    <div id="quizFeedback" class="hidden p-4 rounded-lg text-sm font-medium border">
+                    </div>
+
+                    <div class="flex justify-end pt-2">
+                        <button id="nextQuestionBtn" onclick="nextQuizQuestion()" class="hidden px-6 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm rounded-lg transition">
+                            Soal Selanjutnya ➔
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quiz Completion Card (Hidden by default) -->
+                <div id="quizCompleteCard" class="hidden bg-slate-950 p-8 rounded-xl border border-amber-500/40 text-center space-y-4 glow-effect">
+                    <div class="text-5xl">🏆</div>
+                    <h3 class="text-2xl font-bold text-white">Selamat! Ujian Selesai</h3>
+                    <p class="text-slate-300 text-sm">
+                        Anda telah berhasil menyelesaikan kuis Ujian Kompetensi Mikrokontroler ATmega8535!
+                    </p>
+                    <div class="bg-slate-900 p-4 rounded-lg inline-block border border-slate-800 text-left font-mono text-sm space-y-1">
+                        <div>Total Skor Kuis: <span id="finalQuizScore" class="text-amber-400 font-bold">0 Poin</span></div>
+                        <div>Status Gelar: <span id="finalQuizRank" class="text-cyan-400 font-bold">Teknisi Muda ATmega</span></div>
+                    </div>
+                    <div>
+                        <button onclick="resetQuiz()" class="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold rounded-lg hover:opacity-90 transition">
+                            Ulangi Ujian
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Audio Synthesizer using Web Audio API
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(880, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(150, now + 0.1);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'buzzer') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(1200, now);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundToggleBtn');
+            btn.innerText = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+            btn.classList.toggle('text-slate-500', !soundEnabled);
+        }
+
+        // Global State & Progress
+        let playerState = {
+            xp: 0,
+            rank: "Siswa Siswa Novice"
+        };
+
+        function addXP(amount) {
+            playerState.xp += amount;
+            document.getElementById('playerXP').innerText = `${playerState.xp} XP`;
+            
+            // Rank logic
+            if (playerState.xp >= 500) playerState.rank = "Ahli Embedded Systems TEI";
+            else if (playerState.xp >= 300) playerState.rank = "Teknisi Senior AVR";
+            else if (playerState.xp >= 100) playerState.rank = "Junior Hardware Programmer";
+            
+            document.getElementById('playerRank').innerText = playerState.rank;
+        }
+
+        const pinData = {
+            1: { name: "PB0 (XCK/T0)", port: "PORTB", group: "PORTB", desc: "Pin I/O Port B.0. Juga berfungsi sebagai masukan Counter/Timer 0 eksternal (T0) atau Clock I/O USART (XCK)." },
+            2: { name: "PB1 (T1)", port: "PORTB", group: "PORTB", desc: "Pin I/O Port B.1. Input Counter/Timer 1 eksternal (T1)." },
+            3: { name: "PB2 (AIN0/INT2)", port: "PORTB", group: "PORTB", desc: "Pin I/O Port B.2. Analog Comparator Positive Input (AIN0) atau External Interrupt 2 (INT2)." },
+            4: { name: "PB3 (AIN1/OC0)", port: "PORTB", group: "PORTB", desc: "Pin I/O Port B.3. Analog Comparator Negative Input (AIN1) atau Timer/Counter 0 Output Compare Match (OC0 PWM)." },
+            5: { name: "PB4 (/SS)", port: "PORTB", group: "PORTB", desc: "Pin I/O Port B.4. SPI Slave Select input (/SS)." },
+            6: { name: "PB5 (MOSI)", port: "PORTB", group: "PORTB", desc: "Pin I/O Port B.5. SPI Bus Master Output / Slave Input (MOSI)." },
+            7: { name: "PB6 (MISO)", port: "PORTB", group: "PORTB", desc: "Pin I/O Port B.6. SPI Bus Master Input / Slave Output (MISO)." },
+            8: { name: "PB7 (SCK)", port: "PORTB", group: "PORTB", desc: "Pin I/O Port B.7. SPI Bus Serial Clock (SCK)." },
+            9: { name: "RESET", port: "SYSTEM", group: "SYSTEM", desc: "Input Reset Mikrokontroler (Active LOW). Sinyal LOW pada pin ini selama lebih dari durasi minimum akan me-reset mikrokontroler." },
+            10: { name: "VCC", port: "POWER", group: "POWER", desc: "Catu Daya Utama Digital (+5V DC)." },
+            11: { name: "GND", port: "POWER", group: "POWER", desc: "Ground / Catu Daya 0V." },
+            12: { name: "XTAL2", port: "SYSTEM", group: "SYSTEM", desc: "Output ke Kristal Osilator Eksternal (Pengubah Clock Sistem)." },
+            13: { name: "XTAL1", port: "SYSTEM", group: "SYSTEM", desc: "Input dari Kristal Osilator Eksternal atau Input Clock Eksternal." },
+            14: { name: "PD0 (RXD)", port: "PORTD", group: "PORTD", desc: "Pin I/O Port D.0. USART Serial Communications Receiver Input (RXD)." },
+            15: { name: "PD1 (TXD)", port: "PORTD", group: "PORTD", desc: "Pin I/O Port D.1. USART Serial Communications Transmitter Output (TXD)." },
+            16: { name: "PD2 (INT0)", port: "PORTD", group: "PORTD", desc: "Pin I/O Port D.2. External Interrupt 0 Input (INT0)." },
+            17: { name: "PD3 (INT1)", port: "PORTD", group: "PORTD", desc: "Pin I/O Port D.3. External Interrupt 1 Input (INT1)." },
+            18: { name: "PD4 (OC1B)", port: "PORTD", group: "PORTD", desc: "Pin I/O Port D.4. Timer/Counter 1 Output Compare B Match (OC1B PWM Output)." },
+            19: { name: "PD5 (OC1A)", port: "PORTD", group: "PORTD", desc: "Pin I/O Port D.5. Timer/Counter 1 Output Compare A Match (OC1A PWM Output)." },
+            20: { name: "PD6 (ICP1)", port: "PORTD", group: "PORTD", desc: "Pin I/O Port D.6. Timer/Counter 1 Input Capture Pin (ICP1)." },
+            21: { name: "PD7 (OC2)", port: "PORTD", group: "PORTD", desc: "Pin I/O Port D.7. Timer/Counter 2 Output Compare Match (OC2 PWM Output)." },
+
+            22: { name: "PC0 (SCL)", port: "PORTC", group: "PORTC", desc: "Pin I/O Port C.0. Two-Wire Serial Bus Clock Line (I2C/TWI SCL)." },
+            23: { name: "PC1 (SDA)", port: "PORTC", group: "PORTC", desc: "Pin I/O Port C.1. Two-Wire Serial Bus Data Line (I2C/TWI SDA)." },
+            24: { name: "PC2 (TCK)", port: "PORTC", group: "PORTC", desc: "Pin I/O Port C.2. JTAG Test Clock." },
+            25: { name: "PC3 (TMS)", port: "PORTC", group: "PORTC", desc: "Pin I/O Port C.3. JTAG Test Mode Select." },
+            26: { name: "PC4 (TDO)", port: "PORTC", group: "PORTC", desc: "Pin I/O Port C.4. JTAG Test Data Out." },
+            27: { name: "PC5 (TDI)", port: "PORTC", group: "PORTC", desc: "Pin I/O Port C.5. JTAG Test Data In." },
+            28: { name: "PC6 (TOSC1)", port: "PORTC", group: "PORTC", desc: "Pin I/O Port C.6. Timer Oscillator Pin 1." },
+            29: { name: "PC7 (TOSC2)", port: "PORTC", group: "PORTC", desc: "Pin I/O Port C.7. Timer Oscillator Pin 2." },
+            30: { name: "AVCC", port: "POWER", group: "POWER", desc: "Catu Daya Catu Tegangan untuk PORTA (ADC Module). Harus dihubungkan ke VCC (dengan Low Pass Filter LC jika butuh presisi tinggi)." },
+            31: { name: "AGND", port: "POWER", group: "POWER", desc: "Ground Analogi untuk ADC Module." },
+            32: { name: "AREF", port: "POWER", group: "POWER", desc: "Analog Reference Voltage Pin untuk konversi ADC." },
+            33: { name: "PA7 (ADC7)", port: "PORTA", group: "PORTA", desc: "Pin I/O Port A.7 / Analog Input Channel 7 ADC." },
+            34: { name: "PA6 (ADC6)", port: "PORTA", group: "PORTA", desc: "Pin I/O Port A.6 / Analog Input Channel 6 ADC." },
+            35: { name: "PA5 (ADC5)", port: "PORTA", group: "PORTA", desc: "Pin I/O Port A.5 / Analog Input Channel 5 ADC." },
+            36: { name: "PA4 (ADC4)", port: "PORTA", group: "PORTA", desc: "Pin I/O Port A.4 / Analog Input Channel 4 ADC." },
+            37: { name: "PA3 (ADC3)", port: "PORTA", group: "PORTA", desc: "Pin I/O Port A.3 / Analog Input Channel 3 ADC." },
+            38: { name: "PA2 (ADC2)", port: "PORTA", group: "PORTA", desc: "Pin I/O Port A.2 / Analog Input Channel 2 ADC." },
+            39: { name: "PA1 (ADC1)", port: "PORTA", group: "PORTA", desc: "Pin I/O Port A.1 / Analog Input Channel 1 ADC." },
+            40: { name: "PA0 (ADC0)", port: "PORTA", group: "PORTA", desc: "Pin I/O Port A.0 / Analog Input Channel 0 ADC." }
+        };
+
+        const pinGroupColors = {
+            "PORTA": "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/40",
+            "PORTB": "bg-blue-500/20 text-blue-300 border-blue-500/40 hover:bg-blue-500/40",
+            "PORTC": "bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/40",
+            "PORTD": "bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/40",
+            "POWER": "bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/40",
+            "SYSTEM": "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 hover:bg-cyan-500/40"
+        };
+
+        // Render DIP-40 Pinout Diagram
+        function renderPinoutGrid() {
+            const container = document.getElementById('pinGrid');
+            let html = '';
+
+            // 20 pin pairs (Pin 1 vs 40, Pin 2 vs 39, ... Pin 20 vs 21)
+            for (let leftPin = 1; leftPin <= 20; leftPin++) {
+                const rightPin = 41 - leftPin;
+                const leftData = pinData[leftPin];
+                const rightData = pinData[rightPin];
+
+                html += `
+                    <div class="flex items-center justify-between gap-3">
+                        <!-- Left Pin -->
+                        <button onclick="inspectPin(${leftPin})" class="pin-btn flex-1 flex items-center justify-between px-2.5 py-1 rounded border text-[11px] ${pinGroupColors[leftData.group]}">
+                            <span class="font-bold mr-1 text-slate-400">${leftPin}</span>
+                            <span class="truncate">${leftData.name}</span>
+                        </button>
+
+                        <div class="w-3 h-1 bg-slate-700"></div>
+
+                        <!-- Right Pin -->
+                        <button onclick="inspectPin(${rightPin})" class="pin-btn flex-1 flex items-center justify-between px-2.5 py-1 rounded border text-[11px] ${pinGroupColors[rightData.group]}">
+                            <span class="truncate">${rightData.name}</span>
+                            <span class="font-bold ml-1 text-slate-400">${rightPin}</span>
+                        </button>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function inspectPin(pinNum) {
+            playSound('click');
+            const data = pinData[pinNum];
+            document.getElementById('pinDetailNumber').innerText = `Pin ${pinNum}`;
+            document.getElementById('pinDetailGroup').innerText = data.group;
+            document.getElementById('pinDetailName').innerText = data.name;
+            document.getElementById('pinDetailDesc').innerText = data.desc;
+
+            // Handle game check if game active
+            if (pinGameActive) {
+                checkPinGameAnswer(pinNum);
+            }
+        }
+
+        // Pin Game Logic
+        let pinGameActive = false;
+        let currentTargetPin = null;
+        let pinGameScore = 0;
+
+        const pinGameQuestions = [
+            { pin: 40, prompt: "Klik Pin yang berfungsi sebagai ADC Channel 0 (ADC0)!" },
+            { pin: 9, prompt: "Klik Pin yang berfungsi sebagai RESET Mikrokontroler!" },
+            { pin: 10, prompt: "Klik Pin Catu Daya Utama Digital +5V (VCC)!" },
+            { pin: 16, prompt: "Klik Pin External Interrupt 0 (INT0) pada PORTD!" },
+            { pin: 8, prompt: "Klik Pin SPI Serial Clock (SCK) pada PORTB!" },
+            { pin: 22, prompt: "Klik Pin I2C Clock (SCL) pada PORTC!" },
+            { pin: 32, prompt: "Klik Pin Analog Reference Voltage (AREF)!" },
+            { pin: 15, prompt: "Klik Pin Serial Transmitter (TXD) USART!" }
+        ];
+
+        function startPinoutGame() {
+            playSound('click');
+            pinGameActive = true;
+            document.getElementById('pinGamePanel').classList.remove('hidden');
+            nextPinQuestion();
+        }
+
+        function stopPinoutGame() {
+            pinGameActive = false;
+            document.getElementById('pinGamePanel').classList.add('hidden');
+        }
+
+        function nextPinQuestion() {
+            const q = pinGameQuestions[Math.floor(Math.random() * pinGameQuestions.length)];
+            currentTargetPin = q.pin;
+            document.getElementById('pinGameQuestion').innerText = q.prompt;
+            document.getElementById('pinGameFeedback').innerText = "Silakan klik pin pada diagram chip...";
+            document.getElementById('pinGameFeedback').className = "font-semibold text-slate-300";
+        }
+
+        function checkPinGameAnswer(selectedPin) {
+            const feedback = document.getElementById('pinGameFeedback');
+            if (selectedPin === currentTargetPin) {
+                playSound('correct');
+                pinGameScore += 25;
+                addXP(25);
+                document.getElementById('pinGameScore').innerText = `Skor: ${pinGameScore}`;
+                feedback.innerText = "Tepat Sekali! 🎉 (+25 XP)";
+                feedback.className = "font-bold text-emerald-400";
+                setTimeout(nextPinQuestion, 1200);
+            } else {
+                playSound('wrong');
+                feedback.innerText = `Kurang tepat. Pin ${selectedPin} bukan jawaban yang dimaksud. Coba lagi!`;
+                feedback.className = "font-bold text-rose-400";
+            }
+        }
+
+        let currentPort = 'A';
+        const portState = {
+            'A': { ddr: 0x00, port: 0x00, pin: 0x00 },
+            'B': { ddr: 0x00, port: 0x00, pin: 0x00 },
+            'C': { ddr: 0x00, port: 0x00, pin: 0x00 },
+            'D': { ddr: 0x00, port: 0x00, pin: 0x00 }
+        };
+
+        function selectRegisterPort(portName) {
+            playSound('click');
+            currentPort = portName;
+            document.querySelectorAll('.port-select-btn').forEach(btn => {
+                btn.className = "port-select-btn px-4 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 font-mono font-bold text-sm";
+            });
+            document.getElementById(`btnPort${portName}`).className = "port-select-btn px-4 py-1.5 rounded-lg bg-cyan-600 text-white font-mono font-bold text-sm";
+
+            document.querySelectorAll('.currentPortLabel').forEach(el => el.innerText = portName);
+            renderRegisters();
+        }
+
+        function toggleBit(registerType, bitIndex) {
+            playSound('click');
+            const p = portState[currentPort];
+            if (registerType === 'ddr') {
+                p.ddr ^= (1 << bitIndex);
+            } else if (registerType === 'port') {
+                p.port ^= (1 << bitIndex);
+            } else if (registerType === 'pin') {
+                p.pin ^= (1 << bitIndex);
+            }
+            renderRegisters();
+        }
+
+        function renderRegisters() {
+            const p = portState[currentPort];
+
+            // Render DDR Bits
+            const ddrContainer = document.getElementById('ddrBits');
+            const portContainer = document.getElementById('portBits');
+            const pinContainer = document.getElementById('pinBits');
+
+            let ddrHtml = '', portHtml = '', pinHtml = '';
+
+            for (let b = 7; b >= 0; b--) {
+                const isDdrHigh = (p.ddr & (1 << b)) !== 0;
+                const isPortHigh = (p.port & (1 << b)) !== 0;
+                const isPinHigh = (p.pin & (1 << b)) !== 0;
+
+                ddrHtml += `
+                    <button onclick="toggleBit('ddr', ${b})" class="p-2 rounded border font-bold transition ${isDdrHigh ? 'bg-cyan-500 text-slate-950 border-cyan-400' : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'}">
+                        <div>Bit ${b}</div>
+                        <div class="text-sm font-mono">${isDdrHigh ? '1 (OUT)' : '0 (IN)'}</div>
+                    </button>
+                `;
+
+                portHtml += `
+                    <button onclick="toggleBit('port', ${b})" class="p-2 rounded border font-bold transition ${isPortHigh ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'}">
+                        <div>Bit ${b}</div>
+                        <div class="text-sm font-mono">${isPortHigh ? '1 (HIGH)' : '0 (LOW)'}</div>
+                    </button>
+                `;
+
+                pinHtml += `
+                    <button onclick="toggleBit('pin', ${b})" class="p-2 rounded border font-bold transition ${isPinHigh ? 'bg-purple-500 text-white border-purple-400' : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'}">
+                        <div>Bit ${b}</div>
+                        <div class="text-sm font-mono">${isPinHigh ? '1 (+5V)' : '0 (0V)'}</div>
+                    </button>
+                `;
+            }
+
+            ddrContainer.innerHTML = ddrHtml;
+            portContainer.innerHTML = portHtml;
+            pinContainer.innerHTML = pinHtml;
+
+            // Update Hex Displays
+            document.getElementById('ddrHexVal').innerText = `0x${p.ddr.toString(16).padStart(2, '0').toUpperCase()}`;
+            document.getElementById('portHexVal').innerText = `0x${p.port.toString(16).padStart(2, '0').toUpperCase()}`;
+            document.getElementById('pinHexVal').innerText = `0x${p.pin.toString(16).padStart(2, '0').toUpperCase()}`;
+
+            // Update Code Preview
+            const ddrHex = `0x${p.ddr.toString(16).padStart(2, '0').toUpperCase()}`;
+            const portHex = `0x${p.port.toString(16).padStart(2, '0').toUpperCase()}`;
+            document.getElementById('codeDDRHex').innerText = ddrHex;
+            document.getElementById('codePORTHex').innerText = portHex;
+            document.getElementById('codeDDRBin').innerText = p.ddr.toString(2).padStart(8, '0');
+            document.getElementById('codePORTBin').innerText = p.port.toString(2).padStart(8, '0');
+
+            // Render LED Matrix Visualizer
+            renderLedMatrix();
+        }
+
+        function renderLedMatrix() {
+            const p = portState[currentPort];
+            const matrix = document.getElementById('ledMatrix');
+            let html = '';
+
+            for (let b = 7; b >= 0; b--) {
+                const isOutput = (p.ddr & (1 << b)) !== 0;
+                const outputState = (p.port & (1 << b)) !== 0;
+                const isLit = isOutput && outputState;
+
+                html += `
+                    <div class="flex flex-col items-center bg-slate-950 p-2 rounded border border-slate-800">
+                        <span class="text-[10px] text-slate-500 font-mono mb-1">P${currentPort}${b}</span>
+                        <div class="w-6 h-6 rounded-full border-2 transition-all duration-300 ${isLit ? 'bg-emerald-400 border-emerald-200 glow-green' : 'bg-slate-900 border-slate-700'}"></div>
+                        <span class="text-[9px] mt-1 font-mono ${isLit ? 'text-emerald-400 font-bold' : 'text-slate-600'}">${isLit ? 'ON' : 'OFF'}</span>
+                    </div>
+                `;
+            }
+            matrix.innerHTML = html;
+        }
+
+        let currentMission = 1;
+        let sensorValue = 0; // Standard 0-100% or analog scale
+
+        function loadMission(missionId) {
+            playSound('click');
+            currentMission = parseInt(missionId);
+            const sensorBox = document.getElementById('sensorControlContainer');
+            const actuatorBox = document.getElementById('actuatorControlContainer');
+
+            if (currentMission === 1) {
+                // Mission 1: LDR Sensor -> Relay & Lamp
+                document.getElementById('sensorTypeBadge').innerText = "Analog (LDR)";
+                document.getElementById('actuatorTypeBadge').innerText = "Digital (Relay)";
+                document.getElementById('sensorPinMap').innerText = "ATmega8535 Pin 40 (PORTA.0 / ADC0)";
+                document.getElementById('actuatorPinMap').innerText = "ATmega8535 Pin 22 (PORTC.0)";
+                document.getElementById('missionObjectiveText').innerText = "Ketika Sensor Cahaya (LDR) mendeteksi kondisi GELAP (Intensitas Cahaya < 30%), ADC membaca nilai < 300. Mikrokontroler mengaktifkan Relay (HIGH) untuk menyalakan Lampu Penerangan.";
+
+                sensorBox.innerHTML = `
+                    <label class="block text-xs text-slate-300 font-medium mb-1">Intensitas Cahaya Lingkungan (LDR):</label>
+                    <input type="range" min="0" max="100" value="70" id="ldrSlider" oninput="updateMissionSim()" class="w-full accent-cyan-400">
+                    <div class="flex justify-between text-xs text-slate-400 font-mono">
+                        <span>🌙 Gelap (0%)</span>
+                        <span id="ldrValText" class="text-cyan-400 font-bold">70%</span>
+                        <span>☀️ Terang (100%)</span>
+                    </div>
+                `;
+
+                actuatorBox.innerHTML = `
+                    <div class="flex flex-col items-center p-4 bg-slate-900 rounded-lg border border-slate-800 text-center space-y-2">
+                        <div id="relayBulb" class="w-12 h-12 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-xl transition-all duration-300">
+                            💡
+                        </div>
+                        <span id="relayStatusText" class="text-xs font-mono font-bold text-slate-400">Relay / Lampu: OFF</span>
+                    </div>
+                `;
+            } 
+            else if (currentMission === 2) {
+                // Mission 2: LM35 Temp Sensor -> Buzzer & LCD
+                document.getElementById('sensorTypeBadge').innerText = "Analog (LM35)";
+                document.getElementById('actuatorTypeBadge').innerText = "PWM / Audio Buzzer";
+                document.getElementById('sensorPinMap').innerText = "ATmega8535 Pin 39 (PORTA.1 / ADC1)";
+                document.getElementById('actuatorPinMap').innerText = "ATmega8535 Pin 4 (PORTB.3 / OC0 Buzzer)";
+                document.getElementById('missionObjectiveText').innerText = "Sensor Suhu LM35 menghasilkan tegangan 10mV/°C. Jika Suhu terdeteksi > 40°C, ATmega8535 memicu Buzzer peringatan dan menampilkan status pada LCD 16x2.";
+
+                sensorBox.innerHTML = `
+                    <label class="block text-xs text-slate-300 font-medium mb-1">Simulasi Suhu Ruangan Mesin (LM35):</label>
+                    <input type="range" min="10" max="90" value="28" id="tempSlider" oninput="updateMissionSim()" class="w-full accent-amber-400">
+                    <div class="flex justify-between text-xs text-slate-400 font-mono">
+                        <span>❄️ 10°C</span>
+                        <span id="tempValText" class="text-amber-400 font-bold">28°C</span>
+                        <span>🔥 90°C</span>
+                    </div>
+                `;
+
+                actuatorBox.innerHTML = `
+                    <!-- Virtual LCD 16x2 Display -->
+                    <div class="bg-emerald-950 p-3 rounded-lg border border-emerald-600 font-mono text-emerald-300 text-xs shadow-inner">
+                        <div class="text-[10px] text-emerald-600 border-b border-emerald-800/80 mb-1">LCD 16x2 Display (PORTC)</div>
+                        <div id="lcdLine1">Suhu: 28.0 C</div>
+                        <div id="lcdLine2" class="text-emerald-400 font-bold">Status: NORMAL</div>
+                    </div>
+                `;
+            }
+            else if (currentMission === 3) {
+                // Mission 3: Ultrasonic -> Servo Motor
+                document.getElementById('sensorTypeBadge').innerText = "Digital (Ultrasonic HC-SR04)";
+                document.getElementById('actuatorTypeBadge').innerText = "PWM Servo Motor";
+                document.getElementById('sensorPinMap').innerText = "ATmega8535 Pin 16 (PD2 / INT0 Trigger & Echo)";
+                document.getElementById('actuatorPinMap').innerText = "ATmega8535 Pin 19 (PD5 / OC1A PWM)";
+                document.getElementById('missionObjectiveText').innerText = "Sensor HC-SR04 mengukur jarak objek kendaraan. Jika Jarak < 15 cm, ATmega8535 membangkitkan sinyal PWM Timer1 untuk memutar Servo Palang Pintu 90° (Terbuka).";
+
+                sensorBox.innerHTML = `
+                    <label class="block text-xs text-slate-300 font-medium mb-1">Jarak Objek Kendaraan (HC-SR04):</label>
+                    <input type="range" min="5" max="100" value="50" id="distanceSlider" oninput="updateMissionSim()" class="w-full accent-purple-400">
+                    <div class="flex justify-between text-xs text-slate-400 font-mono">
+                        <span>🚗 5 cm</span>
+                        <span id="distValText" class="text-purple-400 font-bold">50 cm</span>
+                        <span>100 cm</span>
+                    </div>
+                `;
+
+                actuatorBox.innerHTML = `
+                    <div class="bg-slate-900 p-4 rounded-lg border border-slate-800 text-center space-y-2">
+                        <div class="text-xs text-slate-400 font-mono">Posisi Palang Pintu Servo:</div>
+                        <div id="servoGateVisual" class="w-28 h-3 bg-slate-700 mx-auto rounded transition-all duration-500 transform rotate-0 origin-left"></div>
+                        <div id="servoAngleText" class="text-xs font-mono font-bold text-slate-300">Sudut: 0° (Tertutup)</div>
+                    </div>
+                `;
+            }
+            else if (currentMission === 4) {
+                // Mission 4: Push Button Input -> LED Output Matrix
+                document.getElementById('sensorTypeBadge').innerText = "Digital Input (Push Button)";
+                document.getElementById('actuatorTypeBadge').innerText = "Digital Output (LEDs)";
+                document.getElementById('sensorPinMap').innerText = "ATmega8535 Pin 1 (PORTB.0 Input)";
+                document.getElementById('actuatorPinMap').innerText = "ATmega8535 PORTD (Pin 14-21 Output)";
+                document.getElementById('missionObjectiveText').innerText = "Menunjukkan logika sakelar aktif LOW (Pull-up internal AVR). Tekan tombol untuk mengaktifkan pola running LED.";
+
+                sensorBox.innerHTML = `
+                    <div class="text-center py-2">
+                        <button id="missionBtnInput" onclick="toggleMissionButton()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 border-2 border-cyan-500 rounded-xl font-bold text-cyan-400 shadow-lg active:scale-95 transition">
+                            🔘 Tekan Sakelar Push Button
+                        </button>
+                        <p class="text-[11px] text-slate-500 mt-2">PINB.0: <span id="btnPinState" class="text-slate-300 font-mono">HIGH (1 - Unpressed)</span></p>
+                    </div>
+                `;
+
+                actuatorBox.innerHTML = `
+                    <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">
+                        <div class="text-xs text-slate-400 font-mono mb-2 text-center">Hasil Output LED Array:</div>
+                        <div id="mission4Leds" class="flex justify-center gap-2">
+                            <!-- 4 LEDs -->
+                            <div class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700"></div>
+                            <div class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700"></div>
+                            <div class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700"></div>
+                            <div class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            updateMissionSim();
+        }
+
+        let buttonPressed = false;
+        function toggleMissionButton() {
+            buttonPressed = !buttonPressed;
+            playSound('click');
+            updateMissionSim();
+        }
+
+        function updateMissionSim() {
+            const step1 = document.getElementById('logicStep1');
+            const step2 = document.getElementById('logicStep2');
+            const step3 = document.getElementById('logicStep3');
+            const adcDisp = document.getElementById('adcValueDisplay');
+            const actState = document.getElementById('actuatorStateDisplay');
+
+            if (currentMission === 1) {
+                const ldrVal = document.getElementById('ldrSlider').value;
+                document.getElementById('ldrValText').innerText = `${ldrVal}%`;
+                const adcRaw = Math.round((ldrVal / 100) * 1023);
+                adcDisp.innerText = adcRaw;
+
+                const isDark = ldrVal < 30;
+
+                step1.innerText = `1. Reading LDR: ${ldrVal}% Light`;
+                step2.innerText = `2. ADC Conversion: ${adcRaw} / 1023`;
+                step3.innerText = isDark ? `3. Condition (<300): MET → Output HIGH` : `3. Condition (<300): NOT MET → Output LOW`;
+
+                const bulb = document.getElementById('relayBulb');
+                const relText = document.getElementById('relayStatusText');
+
+                if (isDark) {
+                    bulb.className = "w-12 h-12 rounded-full bg-amber-400 border-2 border-amber-200 text-xl flex items-center justify-center glow-effect";
+                    relText.innerText = "Relay / Lampu: ON (Terang)";
+                    relText.className = "text-xs font-mono font-bold text-amber-400";
+                    actState.innerText = "HIGH (5V / Relay ON)";
+                    actState.className = "text-emerald-400 font-bold";
+                } else {
+                    bulb.className = "w-12 h-12 rounded-full bg-slate-800 border-2 border-slate-700 text-xl flex items-center justify-center";
+                    relText.innerText = "Relay / Lampu: OFF";
+                    relText.className = "text-xs font-mono font-bold text-slate-400";
+                    actState.innerText = "LOW (0V / Relay OFF)";
+                    actState.className = "text-rose-400 font-bold";
+                }
+            }
+            else if (currentMission === 2) {
+                const temp = document.getElementById('tempSlider').value;
+                document.getElementById('tempValText').innerText = `${temp}°C`;
+                const adcRaw = Math.round(((temp * 10) / 5000) * 1023); // 10mV/C, Vref=5V
+                adcDisp.innerText = adcRaw;
+
+                const isOverheat = temp > 40;
+
+                step1.innerText = `1. Reading LM35: ${temp}°C`;
+                step2.innerText = `2. Voltage: ${(temp * 0.01).toFixed(2)} V (ADC: ${adcRaw})`;
+                step3.innerText = isOverheat ? `3. Temp > 40°C: OVERHEAT ALARM!` : `3. Temp Normal (< 40°C)`;
+
+                document.getElementById('lcdLine1').innerText = `Suhu: ${temp}.0 C`;
+                const lcdLine2 = document.getElementById('lcdLine2');
+
+                if (isOverheat) {
+                    lcdLine2.innerText = "Status: WARNING!!";
+                    lcdLine2.className = "text-rose-400 font-bold animate-pulse";
+                    actState.innerText = "PWM BUZZER ACTIVE!";
+                    actState.className = "text-rose-400 font-bold";
+                    playSound('buzzer');
+                } else {
+                    lcdLine2.innerText = "Status: NORMAL";
+                    lcdLine2.className = "text-emerald-400 font-bold";
+                    actState.innerText = "LOW (Buzzer Silent)";
+                    actState.className = "text-slate-400 font-bold";
+                }
+            }
+            else if (currentMission === 3) {
+                const dist = document.getElementById('distanceSlider').value;
+                document.getElementById('distValText').innerText = `${dist} cm`;
+                adcDisp.innerText = "N/A (Digital Pulse)";
+
+                const isOpen = dist < 15;
+
+                step1.innerText = `1. Echo Pulse Time Measured`;
+                step2.innerText = `2. Calculated Dist: ${dist} cm`;
+                step3.innerText = isOpen ? `3. Jarak < 15cm: Buka Palang!` : `3. Objek Jauh: Tutup Palang`;
+
+                const gate = document.getElementById('servoGateVisual');
+                const angleText = document.getElementById('servoAngleText');
+
+                if (isOpen) {
+                    gate.style.transform = "rotate(-90deg)";
+                    angleText.innerText = "Sudut: 90° (Gate TERBUKA)";
+                    angleText.className = "text-xs font-mono font-bold text-emerald-400";
+                    actState.innerText = "PWM Pulse 2.0ms (90°)";
+                    actState.className = "text-emerald-400 font-bold";
+                } else {
+                    gate.style.transform = "rotate(0deg)";
+                    angleText.innerText = "Sudut: 0° (Gate TERTUTUP)";
+                    angleText.className = "text-xs font-mono font-bold text-slate-400";
+                    actState.innerText = "PWM Pulse 1.0ms (0°)";
+                    actState.className = "text-slate-400 font-bold";
+                }
+            }
+            else if (currentMission === 4) {
+                const pinStateEl = document.getElementById('btnPinState');
+                adcDisp.innerText = buttonPressed ? "0 (LOW)" : "1 (HIGH)";
+
+                step1.innerText = buttonPressed ? `1. Button Pressed (Active LOW)` : `1. Button Released`;
+                step2.innerText = `2. PINB.0 Read: ${buttonPressed ? '0' : '1'}`;
+                step3.innerText = buttonPressed ? `3. Logic Active: Turn ON LEDs` : `3. Idle State`;
+
+                const ledsContainer = document.getElementById('mission4Leds');
+
+                if (buttonPressed) {
+                    pinStateEl.innerText = "LOW (0 - Pressed)";
+                    pinStateEl.className = "text-emerald-400 font-mono font-bold";
+                    actState.innerText = "PORTD Output HIGH (LED ON)";
+                    actState.className = "text-emerald-400 font-bold";
+
+                    ledsContainer.innerHTML = `
+                        <div class="w-5 h-5 rounded-full bg-cyan-400 border border-cyan-200 glow-effect"></div>
+                        <div class="w-5 h-5 rounded-full bg-cyan-400 border border-cyan-200 glow-effect"></div>
+                        <div class="w-5 h-5 rounded-full bg-cyan-400 border border-cyan-200 glow-effect"></div>
+                        <div class="w-5 h-5 rounded-full bg-cyan-400 border border-cyan-200 glow-effect"></div>
+                    `;
+                } else {
+                    pinStateEl.innerText = "HIGH (1 - Unpressed)";
+                    pinStateEl.className = "text-slate-300 font-mono";
+                    actState.innerText = "PORTD Output LOW";
+                    actState.className = "text-slate-400 font-bold";
+
+                    ledsContainer.innerHTML = `
+                        <div class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700"></div>
+                        <div class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700"></div>
+                        <div class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700"></div>
+                        <div class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700"></div>
+                    `;
+                }
+            }
+        }
+
+        const quizQuestions = [
+            {
+                question: "Pada mikrokontroler ATmega8535, PORT manakah yang memiliki fungsi khusus terintegrasi sebagai saluran input Analog-to-Digital Converter (ADC) 10-bit?",
+                options: ["PORTA (Pin 33-40)", "PORTB (Pin 1-8)", "PORTC (Pin 22-29)", "PORTD (Pin 14-21)"],
+                correct: 0,
+                explanation: "PORTA (PA0-PA7) berfungsi sebagai masukan analog untuk modul ADC 8-channel 10-bit internal pada ATmega8535."
+            },
+            {
+                question: "Untuk mengonfigurasi seluruh bit pada PORTC sebagai pin OUTPUT (keluaran), nilai register DDRC yang benar dalam bahasa C adalah...",
+                options: ["DDRC = 0x00;", "DDRC = 0xFF;", "PORTC = 0xFF;", "PINC = 0x00;"],
+                correct: 1,
+                explanation: "Nilai logika 1 pada register DDRx mengonfigurasi pin sebagai Output (0xFF = 0b11111111)."
+            },
+            {
+                question: "Manakah pasangan pin yang digunakan untuk menghubungkan osilator kristal eksternal sebagai sumber detak (clock) ATmega8535?",
+                options: ["VCC & GND", "AREF & AVCC", "XTAL1 & XTAL2 (Pin 12 & 13)", "RXD & TXD"],
+                correct: 2,
+                explanation: "Pin XTAL1 (Pin 13) dan XTAL2 (Pin 12) dihubungkan ke kaki kristal osilator dan kapasitor penetral ke GND."
+            },
+            {
+                question: "Komponen aktuator manakah yang bekerja berdasarkan lebar pulsa PWM (Pulse Width Modulation) untuk mengatur sudut rotasi porosnya?",
+                options: ["Relay 5V", "Buzzer Pasif", "Motor Servo", "Lampu LED"],
+                correct: 2,
+                explanation: "Motor Servo dikontrol dengan sinyal PWM periodik (biasanya 50Hz) dengan lebar pulsa 1ms - 2ms untuk mengatur posisi sudut."
+            },
+            {
+                question: "Register AVR manakah yang digunakan khusus untuk MEMBACA status logika aktual tegangan fisik pada kaki input mikrokontroler?",
+                options: ["PORTx", "DDRx", "PINx", "MCUCR"],
+                correct: 2,
+                explanation: "Register PINx (misal PINA, PINB) adalah read-only address yang mencerminkan level tegangan fisik aktual pada pin."
+            }
+        ];
+
+        let currentQuizIndex = 0;
+        let quizScore = 0;
+
+        function renderQuizQuestion() {
+            const q = quizQuestions[currentQuizIndex];
+            document.getElementById('quizProgress').innerText = `Soal ${currentQuizIndex + 1} dari ${quizQuestions.length}`;
+            document.getElementById('quizQuestionText').innerText = q.question;
+
+            const optionsBox = document.getElementById('quizOptionsContainer');
+            let optionsHtml = '';
+
+            q.options.forEach((opt, idx) => {
+                optionsHtml += `
+                    <button onclick="submitAnswer(${idx})" class="quiz-opt-btn w-full text-left p-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sm font-medium transition flex items-center justify-between">
+                        <span>${String.fromCharCode(65 + idx)}. ${opt}</span>
+                        <span class="text-xs text-slate-500 font-mono">Pilih</span>
+                    </button>
+                `;
+            });
+
+            optionsBox.innerHTML = optionsHtml;
+            document.getElementById('quizFeedback').classList.add('hidden');
+            document.getElementById('nextQuestionBtn').classList.add('hidden');
+        }
+
+        function submitAnswer(chosenIdx) {
+            playSound('click');
+            const q = quizQuestions[currentQuizIndex];
+            const feedback = document.getElementById('quizFeedback');
+            const optBtns = document.querySelectorAll('.quiz-opt-btn');
+
+            // Disable buttons
+            optBtns.forEach(btn => btn.disabled = true);
+
+            if (chosenIdx === q.correct) {
+                playSound('correct');
+                quizScore += 100;
+                addXP(100);
+                feedback.className = "p-4 rounded-lg text-sm font-medium bg-emerald-950/80 border border-emerald-500 text-emerald-300 block";
+                feedback.innerHTML = `<strong>Benar! 🎉 (+100 XP)</strong><br>${q.explanation}`;
+                optBtns[chosenIdx].classList.add('bg-emerald-900/60', 'border-emerald-500', 'text-emerald-200');
+            } else {
+                playSound('wrong');
+                feedback.className = "p-4 rounded-lg text-sm font-medium bg-rose-950/80 border border-rose-500 text-rose-300 block";
+                feedback.innerHTML = `<strong>Kurang Tepat.</strong> Jawaban benar: <b>${q.options[q.correct]}</b>.<br>${q.explanation}`;
+                optBtns[chosenIdx].classList.add('bg-rose-900/60', 'border-rose-500', 'text-rose-200');
+            }
+
+            document.getElementById('nextQuestionBtn').classList.remove('hidden');
+        }
+
+        function nextQuizQuestion() {
+            playSound('click');
+            currentQuizIndex++;
+            if (currentQuizIndex < quizQuestions.length) {
+                renderQuizQuestion();
+            } else {
+                // Quiz Complete
+                document.getElementById('quizBox').classList.add('hidden');
+                document.getElementById('quizCompleteCard').classList.remove('hidden');
+                document.getElementById('finalQuizScore').innerText = `${quizScore} Poin`;
+                document.getElementById('finalQuizRank').innerText = playerState.rank;
+            }
+        }
+
+        function resetQuiz() {
+            playSound('click');
+            currentQuizIndex = 0;
+            quizScore = 0;
+            document.getElementById('quizBox').classList.remove('hidden');
+            document.getElementById('quizCompleteCard').classList.add('hidden');
+            renderQuizQuestion();
+        }
+
+        // Navigation Tabs Switcher
+        function switchTab(tabId) {
+            playSound('click');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-200 px-4 py-2 font-medium flex items-center gap-2";
+            });
+
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).className = "tab-btn active border-b-2 border-cyan-400 text-cyan-400 px-4 py-2 font-medium flex items-center gap-2";
+        }
+
+        // Initialize Application
+        window.onload = function() {
+            renderPinoutGrid();
+            inspectPin(40); // default inspect Pin 40
+            selectRegisterPort('A');
+            loadMission(1);
+            renderQuizQuestion();
+        };
+    </script>
+</body>
+</html>
